@@ -14,6 +14,7 @@ export async function callEdgeFunction(
 ) {
   const headers: Record<string, string> = {
     'Content-Type': 'application/json',
+    'apikey': supabaseAnonKey,
   };
 
   if (requireAuth) {
