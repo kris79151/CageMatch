@@ -1,4 +1,4 @@
-import { createContext, useContext, useEffect, useState, type ReactNode } from 'react';
+import { createContext, useContext, useEffect, useRef, useState, type ReactNode } from 'react';
 import { supabase, callEdgeFunction } from './supabase';
 import type { User, Session } from '@supabase/supabase-js';
 
@@ -38,13 +38,18 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const [session, setSession] = useState<Session | null>(null);
   const [cmUser, setCmUser] = useState<CagMatchUser | null>(null);
   const [loading, setLoading] = useState(true);
+  const fetchingRef = useRef(false);
 
   async function fetchCmUser() {
+    if (fetchingRef.current) return;
+    fetchingRef.current = true;
     try {
       const data = await callEdgeFunction('cage-match-credits', { action: 'balance' });
       setCmUser((prev) => prev ? { ...prev, ...data } : data);
     } catch (err) {
       console.error('[CageMatch] fetchCmUser failed:', err);
+    } finally {
+      fetchingRef.current = false;
     }
   }
 
@@ -52,13 +57,16 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     supabase.auth.getSession().then(({ data: { session: s } }) => {
       setSession(s);
       setUser(s?.user ?? null);
-      if (s?.user) fetchCmUser();
+      // Don't call fetchCmUser here — onAuthStateChange INITIAL_SESSION handles it
       setLoading(false);
     });
 
-    const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, s) => {
+    const { data: { subscription } } = supabase.auth.onAuthStateChange((event, s) => {
       setSession(s);
       setUser(s?.user ?? null);
+      // Skip token refresh events to prevent loop:
+      // fetchCmUser -> 401 -> refreshSession -> TOKEN_REFRESHED -> fetchCmUser -> loop
+      if (event === 'TOKEN_REFRESHED') return;
       if (s?.user) fetchCmUser();
       else setCmUser(null);
     });
