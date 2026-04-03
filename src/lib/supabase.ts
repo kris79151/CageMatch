@@ -18,17 +18,29 @@ export async function callEdgeFunction(
   };
 
   if (requireAuth) {
-    // getSession() returns cached/stale tokens — refreshSession() forces a fresh one
-    const { data: { session } } = await supabase.auth.refreshSession();
+    let { data: { session } } = await supabase.auth.getSession();
     if (!session?.access_token) throw new Error('Not authenticated');
     headers['Authorization'] = `Bearer ${session.access_token}`;
   }
 
-  const res = await fetch(`${FUNCTION_BASE}/${name}`, {
+  let res = await fetch(`${FUNCTION_BASE}/${name}`, {
     method: 'POST',
     headers,
     body: JSON.stringify(body),
   });
+
+  // If token was stale, refresh and retry once
+  if (res.status === 401 && requireAuth) {
+    const { data: { session } } = await supabase.auth.refreshSession();
+    if (session?.access_token) {
+      headers['Authorization'] = `Bearer ${session.access_token}`;
+      res = await fetch(`${FUNCTION_BASE}/${name}`, {
+        method: 'POST',
+        headers,
+        body: JSON.stringify(body),
+      });
+    }
+  }
 
   const data = await res.json();
   if (!res.ok) throw new Error(data.error || data.message || `HTTP ${res.status}`);
