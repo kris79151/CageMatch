@@ -43,8 +43,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     try {
       const data = await callEdgeFunction('cage-match-credits', { action: 'balance' });
       setCmUser((prev) => prev ? { ...prev, ...data } : data);
-    } catch {
-      // Not yet set up
+    } catch (err) {
+      console.error('[CageMatch] fetchCmUser failed:', err);
     }
   }
 
