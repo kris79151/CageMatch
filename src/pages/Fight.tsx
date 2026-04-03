@@ -3,16 +3,16 @@ import { useAuth } from '../lib/auth';
 import { callEdgeFunction } from '../lib/supabase';
 
 const ALL_MODES = [
-  { id: 'analysis', label: 'Analysis', credits: 2, lite: true },
-  { id: 'proposal', label: 'Proposal', credits: 2, lite: true },
-  { id: 'translation', label: 'Translation', credits: 2, lite: true },
-  { id: 'debate', label: 'Debate', credits: 3, lite: false },
-  { id: 'writing', label: 'Writing', credits: 3, lite: false },
-  { id: 'pattern', label: 'Pattern', credits: 3, lite: false },
-  { id: 'negotiation', label: 'Negotiation', credits: 4, lite: false },
-  { id: 'red-team', label: 'Red Team', credits: 5, lite: false },
-  { id: 'simulation', label: 'Simulation', credits: 5, lite: false },
-  { id: 'stress-test', label: 'Stress Test', credits: 5, lite: false },
+  { id: 'analysis', label: 'Analysis', credits: 2, lite: true, desc: 'Get your idea reviewed by 3 AIs at once' },
+  { id: 'proposal', label: 'Proposal', credits: 2, lite: true, desc: 'Turn a rough idea into a concrete plan' },
+  { id: 'translation', label: 'Translation', credits: 2, lite: true, desc: 'Rewrite for a different audience' },
+  { id: 'writing', label: 'Writing', credits: 3, lite: false, desc: 'Three different takes on your piece' },
+  { id: 'debate', label: 'Debate', credits: 3, lite: false, desc: 'AIs argue both sides of your question' },
+  { id: 'pattern', label: 'Pattern', credits: 3, lite: false, desc: 'Find structural patterns others miss' },
+  { id: 'negotiation', label: 'Negotiation', credits: 4, lite: false, desc: 'Map competing interests and find leverage' },
+  { id: 'simulation', label: 'Simulation', credits: 5, lite: false, desc: 'Run your scenario forward — what actually happens?' },
+  { id: 'red-team', label: 'Red Team', credits: 5, lite: false, desc: 'Find every way this fails' },
+  { id: 'stress-test', label: 'Stress Test', credits: 5, lite: false, desc: 'Push every assumption to its breaking point' },
 ];
 
 interface FightResponse {
@@ -34,17 +34,18 @@ export default function Fight() {
   const [copied, setCopied] = useState(false);
   const [showUpgradeModal, setShowUpgradeModal] = useState(false);
 
-  const isFree = cmUser?.tier === 'free';
-  const isLite = cmUser?.tier === 'free' || cmUser?.tier === 'lite';
-  const isPro = cmUser?.tier === 'pro';
+  const tier = cmUser?.tier ?? 'free';
+  const isFree = tier === 'free';
+  const isLite = tier === 'lite';
+  const isPro = tier === 'pro';
   const creditsRemaining = cmUser?.credits_remaining ?? 0;
   const freeRuns = cmUser?.free_runs_remaining ?? 0;
+  const freeTrialExhausted = isFree && freeRuns <= 0;
 
   const handleFight = async () => {
     if (!prompt.trim()) return;
 
-    // Fix 4: Show conversion modal instead of error when out of runs
-    if (isFree && freeRuns <= 0) {
+    if (freeTrialExhausted) {
       setShowUpgradeModal(true);
       return;
     }
@@ -110,26 +111,48 @@ export default function Fight() {
       )}
 
       {/* Mode selector */}
-      <div className="flex flex-wrap gap-2 mb-4">
+      <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-5 gap-2 mb-4">
         {ALL_MODES.map((m) => {
-          const disabled = isLite && !m.lite;
+          // Free trial = full Pro access. Lite = lite modes only. Pro = all.
+          const locked = isLite && !m.lite;
           return (
             <button
               key={m.id}
-              onClick={() => !disabled && setMode(m.id)}
-              disabled={disabled}
-              className={`px-3 py-1.5 rounded-md text-sm font-medium transition-all border relative ${
+              onClick={() => !locked && setMode(m.id)}
+              disabled={locked}
+              className={`group relative px-3 py-2.5 rounded-lg text-left transition-all border ${
                 mode === m.id
-                  ? 'border-teal bg-teal/10 text-teal-dark'
-                  : disabled
-                  ? 'border-border bg-border/30 text-text-light/50 cursor-not-allowed'
-                  : 'border-border hover:border-teal/50 text-text'
+                  ? 'border-teal bg-teal/10'
+                  : locked
+                  ? 'border-border bg-border/20 cursor-not-allowed'
+                  : 'border-border hover:border-teal/50'
               }`}
-              title={disabled ? 'Upgrade to Pro' : `${m.credits} credits`}
+              title={locked ? 'Upgrade to Pro' : `${m.credits} credits`}
             >
-              {m.label}
-              {disabled && (
-                <span className="ml-1 text-xs text-text-light/50">Pro</span>
+              <div className="flex items-center gap-1.5">
+                <span className={`text-sm font-medium ${
+                  mode === m.id ? 'text-teal-dark' : locked ? 'text-text-light/50' : 'text-text'
+                }`}>
+                  {m.label}
+                </span>
+                {locked && (
+                  <svg className="w-3.5 h-3.5 text-text-light/40" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                    <rect x="3" y="11" width="18" height="11" rx="2" ry="2" />
+                    <path d="M7 11V7a5 5 0 0 1 10 0v4" />
+                  </svg>
+                )}
+              </div>
+              <div className={`text-xs mt-0.5 leading-tight ${
+                locked ? 'text-text-light/40' : 'text-text-light'
+              }`}>
+                {m.desc}
+              </div>
+              {locked && (
+                <div className="absolute inset-x-0 -bottom-7 left-1/2 -translate-x-1/2 hidden group-hover:block z-10">
+                  <div className="bg-purple text-white text-xs px-2 py-1 rounded whitespace-nowrap shadow-lg">
+                    Upgrade to Pro
+                  </div>
+                </div>
               )}
             </button>
           );
