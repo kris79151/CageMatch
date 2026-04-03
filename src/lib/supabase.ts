@@ -19,6 +19,7 @@ export async function callEdgeFunction(
 
   if (requireAuth) {
     let { data: { session } } = await supabase.auth.getSession();
+    console.log('[CageMatch] session exists:', !!session, 'token prefix:', session?.access_token?.substring(0, 20));
     if (!session?.access_token) throw new Error('Not authenticated');
     headers['Authorization'] = `Bearer ${session.access_token}`;
   }
