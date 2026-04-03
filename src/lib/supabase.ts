@@ -18,7 +18,8 @@ export async function callEdgeFunction(
   };
 
   if (requireAuth) {
-    const { data: { session } } = await supabase.auth.getSession();
+    // getSession() returns cached/stale tokens — refreshSession() forces a fresh one
+    const { data: { session } } = await supabase.auth.refreshSession();
     if (!session?.access_token) throw new Error('Not authenticated');
     headers['Authorization'] = `Bearer ${session.access_token}`;
   }
