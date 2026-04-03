@@ -57,18 +57,17 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     supabase.auth.getSession().then(({ data: { session: s } }) => {
       setSession(s);
       setUser(s?.user ?? null);
-      // Don't call fetchCmUser here — onAuthStateChange INITIAL_SESSION handles it
       setLoading(false);
     });
 
     const { data: { subscription } } = supabase.auth.onAuthStateChange((event, s) => {
       setSession(s);
       setUser(s?.user ?? null);
-      // Skip token refresh events to prevent loop:
-      // fetchCmUser -> 401 -> refreshSession -> TOKEN_REFRESHED -> fetchCmUser -> loop
-      if (event === 'TOKEN_REFRESHED') return;
-      if (s?.user) fetchCmUser();
-      else setCmUser(null);
+      if (event === 'SIGNED_IN' || event === 'TOKEN_REFRESHED' || event === 'INITIAL_SESSION') {
+        if (s?.user) fetchCmUser();
+      } else if (!s?.user) {
+        setCmUser(null);
+      }
     });
 
     return () => subscription.unsubscribe();
