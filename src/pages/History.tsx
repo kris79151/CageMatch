@@ -19,8 +19,7 @@ interface HistoryItem {
 }
 
 const MODEL_DISPLAY: Record<string, string> = {
-  'claude-sonnet-4-5': 'Claude Sonnet 4.5',
-  'claude-opus-4-5': 'Claude Opus 4.5',
+  'claude-sonnet-4': 'Claude Sonnet 4',
   'gpt-4o': 'GPT-4o',
   'gemini-2.5-flash': 'Gemini 2.5 Flash',
   'deepseek-chat': 'DeepSeek V3',

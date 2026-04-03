@@ -3,8 +3,7 @@ import { useAuth } from '../lib/auth';
 import { callEdgeFunction } from '../lib/supabase';
 
 const MODEL_POOL = [
-  { id: 'claude-sonnet-4-5', name: 'Claude Sonnet 4.5' },
-  { id: 'claude-opus-4-5', name: 'Claude Opus 4.5' },
+  { id: 'claude-sonnet-4', name: 'Claude Sonnet 4' },
   { id: 'gpt-4o', name: 'GPT-4o' },
   { id: 'gemini-2.5-flash', name: 'Gemini 2.5 Flash' },
   { id: 'deepseek-chat', name: 'DeepSeek V3' },
@@ -20,7 +19,7 @@ interface Round {
 export default function PingPong() {
   const { cmUser, refreshCredits } = useAuth();
   const [prompt, setPrompt] = useState('');
-  const [builderModel, setBuilderModel] = useState('claude-sonnet-4-5');
+  const [builderModel, setBuilderModel] = useState('claude-sonnet-4');
   const [responderModels, setResponderModels] = useState<string[]>(['gpt-4o']);
   const [sessionId, setSessionId] = useState<string | null>(null);
   const [shareToken, setShareToken] = useState<string | null>(null);
@@ -196,7 +195,11 @@ export default function PingPong() {
         )}
 
         <div className="text-sm text-text-light mb-3">
-          Credits: <span className="font-semibold text-teal">{cmUser?.credits_remaining ?? 0}</span> remaining (this costs 8)
+          {cmUser?.tier === 'free' ? (
+            <><span className="font-semibold text-teal">{cmUser?.free_runs_remaining ?? 0}</span> free runs remaining</>
+          ) : (
+            <>Credits: <span className="font-semibold text-teal">{cmUser?.credits_remaining ?? 0}</span> remaining (this costs 8)</>
+          )}
         </div>
 
         <button
