@@ -3,7 +3,11 @@ import { createClient } from '@supabase/supabase-js';
 const supabaseUrl = import.meta.env.VITE_SUPABASE_URL || 'https://gigmxautxzacndvuxhql.supabase.co';
 const supabaseAnonKey = import.meta.env.VITE_SUPABASE_ANON_KEY || '';
 
-export const supabase = createClient(supabaseUrl, supabaseAnonKey);
+export const supabase = createClient(supabaseUrl, supabaseAnonKey, {
+  auth: {
+    flowType: 'implicit',
+  },
+});
 
 const FUNCTION_BASE = `${supabaseUrl}/functions/v1`;
 
@@ -19,7 +23,6 @@ export async function callEdgeFunction(
 
   if (requireAuth) {
     let { data: { session } } = await supabase.auth.getSession();
-    console.log('[CageMatch] session exists:', !!session, 'token prefix:', session?.access_token?.substring(0, 20));
     if (!session?.access_token) throw new Error('Not authenticated');
     headers['Authorization'] = `Bearer ${session.access_token}`;
   }
